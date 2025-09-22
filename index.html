@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduQuest – Gamified Learning</title>
+    <meta name="description" content="A fun, gamified learning platform for STEM subjects." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Poppins", "Nunito", "ui-sans-serif", "system-ui"],
+            },
+            colors: {
+              brand: {
+                50: '#eef9ff',
+                100: '#d9f0ff',
+                200: '#b9e3ff',
+                300: '#86d0ff',
+                400: '#4ab8ff',
+                500: '#1e9eff',
+                600: '#0a7fe0',
+                700: '#0763b2',
+                800: '#084f8c',
+                900: '#0a426f',
+              },
+            },
+            boxShadow: {
+              glow: '0 10px 30px rgba(30, 158, 255, 0.35)',
+              soft: '0 10px 25px rgba(0,0,0,0.08)'
+            },
+            backgroundImage: {
+              gradientCandy: 'linear-gradient(135deg,#a18cd1 0%, #fbc2eb 100%)',
+              gradientSunset: 'linear-gradient(135deg,#f6d365 0%, #fda085 100%)',
+              gradientOcean: 'linear-gradient(135deg,#5ee7df 0%, #b490ca 100%)',
+              gradientLime: 'linear-gradient(135deg,#84fab0 0%, #8fd3f4 100%)',
+              gradientRoyal: 'linear-gradient(135deg,#667eea 0%, #764ba2 100%)'
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Chart.js for pie charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Force light UI color scheme to avoid invisible text in dark environments */
+      :root { color-scheme: light; }
+      input, select, textarea { color: #0f172a; background-color: #ffffff; }
+      input::placeholder, textarea::placeholder { color: #64748b; opacity: 1; }
+      /* Minor helpers for fun animations */
+      @keyframes floaty { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
+      .floaty { animation: floaty 3s ease-in-out infinite; }
+      .card-hover { transition: transform .2s ease, box-shadow .2s ease; }
+      .card-hover:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 12px 28px rgba(0,0,0,.12); }
+      /* Hide scrollbar utility for clean horizontal carousels */
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-brand-50 to-white text-slate-800">
+    <!-- Header / Nav -->
+    <header class="sticky top-0 z-30 backdrop-blur bg-white/70 border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 grid place-items-center text-white shadow-glow">
+            <span class="text-xl">⭐</span>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-extrabold leading-tight">EduQuest</h1>
+            <p class="text-xs text-slate-500 -mt-1">Play. Learn. Level Up.</p>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center gap-2">
+          <button data-nav="subjects" class="nav-btn px-4 py-2 rounded-lg hover:bg-slate-100">Subjects</button>
+          <button data-nav="leaderboard" class="nav-btn px-4 py-2 rounded-lg hover:bg-slate-100">Leaderboard</button>
+          <button data-nav="scholarships" class="nav-btn px-4 py-2 rounded-lg hover:bg-slate-100">Scholarships</button>
+          <button data-nav="games" class="nav-btn px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Games</button>
+        </nav>
+        <div class="flex items-center gap-3">
+          <div id="userSummary" class="hidden md:flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white/70">
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Level</div>
+              <div id="summaryLevel" class="font-bold">1</div>
+            </div>
+            <div class="w-px h-6 bg-slate-200"></div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Points</div>
+              <div id="summaryPoints" class="font-bold">0</div>
+            </div>
+            <div class="w-px h-6 bg-slate-200"></div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Streak</div>
+              <div id="summaryStreak" class="font-bold">0</div>
+            </div>
+            <div class="w-px h-6 bg-slate-200"></div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase tracking-wide text-slate-500">Rank</div>
+              <div id="summaryRank" class="font-bold">Rookie</div>
+            </div>
+          </div>
+          <button id="btnAuth" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Sign In</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Auth Section -->
+      <section id="sectionAuth" class="">
+        <div class="grid md:grid-cols-2 gap-8 place-items-center">
+          <div class="hidden md:block">
+            <div class="relative">
+              <div class="w-80 h-80 rounded-[2rem] bg-gradientCandy shadow-glow rotate-6"></div>
+              <div class="absolute -top-6 -left-6 w-28 h-28 rounded-3xl bg-gradientSunset floaty grid place-items-center text-3xl">🎯</div>
+              <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-3xl bg-gradientOcean floaty grid place-items-center text-3xl" style="animation-delay: 1s;">📚</div>
+              <div class="absolute inset-0 m-auto w-64 h-64 rounded-[2rem] bg-white/80 backdrop-blur flex flex-col items-center justify-center text-center p-6">
+                <div class="text-5xl">🏆</div>
+                <h2 class="mt-3 font-extrabold text-2xl">Gamified Learning</h2>
+                <p class="text-slate-600 mt-2">Unlock levels, earn badges, and rule the leaderboard while mastering STEM!</p>
+              </div>
+            </div>
+          </div>
+          <div class="w-full max-w-md">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-soft">
+              <div class="flex p-1 bg-slate-100 rounded-xl text-sm mb-4">
+                <button id="tabSignIn" class="flex-1 py-2 rounded-lg bg-white shadow text-brand-700 font-semibold">Sign In</button>
+                <button id="tabSignUp" class="flex-1 py-2 rounded-lg hover:bg-white/80">Sign Up</button>
+              </div>
+              <form id="formSignIn" class="space-y-4">
+                <div>
+                  <label class="text-sm text-slate-600">Email</label>
+                  <input id="siEmail" type="email" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="you@example.com" required />
+                </div>
+                <div>
+                  <label class="text-sm text-slate-600">Password</label>
+                  <input id="siPassword" type="password" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="••••••••" required />
+                </div>
+                <button class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-glow">Sign In</button>
+              </form>
+              <form id="formSignUp" class="space-y-4 hidden">
+                <div>
+                  <label class="text-sm text-slate-600">Full Name</label>
+                  <input id="suName" type="text" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Alex Star" required />
+                </div>
+                <div>
+                  <label class="text-sm text-slate-600">Email</label>
+                  <input id="suEmail" type="email" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="you@example.com" required />
+                </div>
+                <div>
+                  <label class="text-sm text-slate-600">Password</label>
+                  <input id="suPassword" type="password" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Create a strong password" required />
+                </div>
+                <button class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-glow">Create Account</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Student Setup Section -->
+      <section id="sectionSetup" class="hidden">
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-6 shadow-soft">
+          <h2 class="text-2xl font-extrabold">Welcome! Tell us about you 🎉</h2>
+          <p class="text-slate-600 mt-1">We’ll personalize your learning journey.</p>
+          <form id="formSetup" class="grid sm:grid-cols-2 gap-4 mt-6">
+            <div>
+              <label class="text-sm text-slate-600">Class / Grade</label>
+              <select id="setupGrade" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400" required>
+                <option value="" disabled selected>Select Grade</option>
+                <option>Grade 5</option>
+                <option>Grade 6</option>
+                <option>Grade 7</option>
+                <option>Grade 8</option>
+                <option>Grade 9</option>
+                <option>Grade 10</option>
+                <option>Grade 11</option>
+                <option>Grade 12</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Preferred Language</label>
+              <select id="setupLang" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400" required>
+                <option value="" disabled selected>Select Language</option>
+                <option>English</option>
+                <option>हिन्दी (Hindi)</option>
+                <option>বাংলা (Bengali)</option>
+                <option>தமிழ் (Tamil)</option>
+                <option>తెలుగు (Telugu)</option>
+                <option>मराठी (Marathi)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-sm text-slate-600">Full Name</label>
+              <input id="setupName" type="text" class="mt-1 w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Your full name" required />
+            </div>
+            <div class="sm:col-span-2">
+              <button class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-glow">Save & Continue</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Subjects Section -->
+      <section id="sectionSubjects" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-extrabold">Choose a Subject</h2>
+          <div class="flex items-center gap-3">
+            <div class="w-40 bg-slate-200 rounded-full overflow-hidden h-3">
+              <div id="levelBar" class="h-full bg-gradient-to-r from-amber-400 to-rose-500" style="width: 10%"></div>
+            </div>
+            <span id="levelText" class="text-sm text-slate-600">Level 1</span>
+          </div>
+        </div>
+        <div id="subjectsGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+      </section>
+
+      <!-- Math 6 Section (React-like curriculum inside SPA) -->
+      <section id="math6-section" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <button id="backToSubjectsFromMath6" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">← Back</button>
+            <h2 class="text-2xl font-extrabold">Math 6 • Chapters</h2>
+          </div>
+          <div class="text-sm text-slate-600">Practice, Notes, and Quiz</div>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div id="math6-subjects" class="lg:col-span-1 space-y-3"></div>
+          <div id="math6-content" class="lg:col-span-2"></div>
+        </div>
+      </section>
+
+      <!-- Topics Section -->
+      <section id="sectionTopics" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <button id="backToSubjects" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">← Back</button>
+            <h2 id="topicsTitle" class="text-2xl font-extrabold">Topics</h2>
+          </div>
+          <div class="text-sm text-slate-600">Pick a topic to start your quest</div>
+        </div>
+        <div id="topicsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </section>
+
+      <!-- Topic Details Section -->
+      <section id="sectionTopicDetail" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <button id="backToTopics" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">← Topics</button>
+            <h2 id="topicTitle" class="text-2xl font-extrabold">Topic</h2>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700" id="badgeNotes">Notes 0%</span>
+            <span class="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700" id="badgePractice">Practice 0%</span>
+            <span class="px-2 py-1 rounded-full bg-rose-100 text-rose-700" id="badgeQuiz">Best 0%</span>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Notes -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft card-hover">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-100 grid place-items-center text-2xl">📒</div>
+                <div>
+                  <h3 class="font-bold text-lg">Interactive Notes</h3>
+                  <p class="text-slate-600 text-sm">Learn with a quick mini-game</p>
+                </div>
+              </div>
+              <button id="btnStartNotes" class="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Start</button>
+            </div>
+            <div id="notesArea" class="mt-4 hidden">
+              <div id="notesContent" class="space-y-3 text-slate-700 text-sm">
+                <p>Read the key idea for this topic, then complete the mini-game to mark notes as done.</p>
+              </div>
+              <div class="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                <h4 class="font-semibold">Mini-Game: Tap 5 stars ⭐</h4>
+                <p class="text-sm text-slate-600">Stars appear for a few seconds—tap them fast!</p>
+                <div id="starField" class="relative h-48 mt-3 bg-white rounded-xl border border-emerald-200 overflow-hidden"></div>
+                <div class="mt-3 flex items-center justify-between text-sm">
+                  <div>Collected: <span id="starsCollected" class="font-bold">0</span>/5</div>
+                  <button id="btnStartStarGame" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Play</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Practice -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft card-hover">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-100 grid place-items-center text-2xl">🧩</div>
+                <div>
+                  <h3 class="font-bold text-lg">Practice Questions</h3>
+                  <p class="text-slate-600 text-sm">Strengthen your concepts with feedback</p>
+                </div>
+              </div>
+              <button id="btnStartPractice" class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Start</button>
+            </div>
+            <div id="practiceArea" class="mt-4 hidden">
+              <div id="practiceContainer" class="space-y-3"></div>
+              <div class="mt-3 flex items-center justify-between">
+                <div class="text-sm text-slate-600">Score: <span id="practiceScore" class="font-bold">0</span></div>
+                <button id="btnResetPractice" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quiz -->
+          <div class="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-soft card-hover">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-rose-100 grid place-items-center text-2xl">📝</div>
+                <div>
+                  <h3 class="font-bold text-lg">Quiz</h3>
+                  <p class="text-slate-600 text-sm">Affects Rank. Track your highest streak!</p>
+                </div>
+              </div>
+              <button id="btnStartQuiz" class="px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Start</button>
+            </div>
+            <div id="quizArea" class="mt-4 hidden">
+              <div id="quizQuestions" class="space-y-4"></div>
+              <div class="mt-4 flex items-center justify-between">
+                <div class="text-sm text-slate-600">Streak: <span id="quizStreak" class="font-bold">0</span> | Best: <span id="quizBestStreak" class="font-bold">0</span></div>
+                <div class="space-x-2">
+                  <button id="btnSubmitQuiz" class="px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Submit</button>
+                  <button id="btnResetQuiz" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">Reset</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leaderboard Section -->
+      <section id="sectionLeaderboard" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-extrabold">Leaderboard</h2>
+          <div class="text-sm text-slate-600">Compete with peers around you</div>
+        </div>
+        <div id="leaderboardList" class="bg-white rounded-2xl border border-slate-200 divide-y shadow-soft"></div>
+      </section>
+
+      <!-- Scholarships Section -->
+      <section id="sectionScholarships" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-2xl font-extrabold">Scholarships & Schemes</h2>
+            <div class="text-sm text-slate-600">Explore State & Central opportunities</div>
+          </div>
+          <div class="text-sm px-3 py-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200/70 ring-1 ring-white/60 shadow-soft">Results: <span id="scholarshipsCount" class="font-bold">0</span></div>
+        </div>
+
+        <!-- Two-column layout: left content + right highlights/announcements -->
+        <div class="grid lg:grid-cols-12 gap-6 items-start">
+          <!-- Left: Filters + Results -->
+          <div class="lg:col-span-8 space-y-6">
+            <!-- Filters / Search Panel -->
+            <div class="bg-white/80 backdrop-blur rounded-2xl border border-slate-200/70 p-4 shadow-soft ring-1 ring-white/60">
+              <div class="grid sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+                <label class="lg:col-span-4 grid gap-1">
+                  <span class="text-sm text-slate-600">Search</span>
+                  <input id="filterQuery" type="text" placeholder="Search title, eligibility, tags..." class="px-4 py-2 rounded-xl border border-slate-300 bg-white/90 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                </label>
+                <label class="lg:col-span-2 grid gap-1">
+                  <span class="text-sm text-slate-600">Category</span>
+                  <select id="filterCategory" class="px-4 py-2 rounded-xl border border-slate-300 bg-white/90 focus:outline-none focus:ring-2 focus:ring-brand-400">
+                    <option>All</option>
+                    <option>Odisha</option>
+                    <option>Central</option>
+                  </select>
+                </label>
+                <label class="lg:col-span-2 grid gap-1">
+                  <span class="text-sm text-slate-600">Class</span>
+                  <select id="filterClass" class="px-4 py-2 rounded-xl border border-slate-300 bg-white/90 focus:outline-none focus:ring-2 focus:ring-brand-400">
+                    <option value="">Any</option>
+                    <option>6</option>
+                    <option>7</option>
+                    <option>8</option>
+                    <option>9</option>
+                    <option>10</option>
+                    <option>11</option>
+                    <option>12</option>
+                  </select>
+                </label>
+                <label class="lg:col-span-2 grid gap-1">
+                  <span class="text-sm text-slate-600">Income</span>
+                  <select id="filterIncome" class="px-4 py-2 rounded-xl border border-slate-300 bg-white/90 focus:outline-none focus:ring-2 focus:ring-brand-400">
+                    <option value="Any">Any</option>
+                    <option data-cap="24000">≤ ₹24,000</option>
+                    <option data-cap="200000">≤ ₹2,00,000</option>
+                    <option data-cap="350000">≤ ₹3,50,000</option>
+                  </select>
+                </label>
+                <label class="lg:col-span-2 grid gap-1">
+                  <span class="text-sm text-slate-600">Type</span>
+                  <select id="filterType" class="px-4 py-2 rounded-xl border border-slate-300 bg-white/90 focus:outline-none focus:ring-2 focus:ring-brand-400">
+                    <option>All</option>
+                    <option>Merit</option>
+                    <option>Means</option>
+                    <option>Means+Merit</option>
+                    <option>Minority</option>
+                    <option>Welfare</option>
+                  </select>
+                </label>
+                <div class="lg:col-span-12 flex items-center gap-2 justify-end">
+                  <button id="btnResetFilters" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition duration-200 ease-in-out">Reset</button>
+                  <button id="btnApplyFilters" class="px-4 py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 shadow-glow transition duration-200 ease-in-out">Apply</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results Grid (populated by JS) -->
+            <div id="scholarshipsGrid" class="space-y-10"></div>
+          </div>
+
+          <!-- Right: Highlights / Announcements & Widgets -->
+          <aside class="lg:col-span-4 space-y-6 lg:sticky top-24">
+            <!-- Announcements carousel -->
+            <div class="bg-white/80 backdrop-blur rounded-2xl border border-slate-200/70 p-4 shadow-soft ring-1 ring-white/60">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 grid place-items-center text-white shadow-glow">🗞️</div>
+                  <div class="font-semibold">Announcements</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button id="hlPrev" class="px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 shadow-sm">←</button>
+                  <button id="hlNext" class="px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 shadow-sm">→</button>
+                </div>
+              </div>
+              <div class="relative overflow-hidden rounded-xl border border-slate-200/70 ring-1 ring-white/60">
+                <div id="highlightsTrack" class="flex transition-transform duration-300 ease-in-out min-h-[92px]"></div>
+              </div>
+              <div id="highlightsDots" class="mt-2 flex items-center justify-center gap-2"></div>
+            </div>
+
+            <!-- Quick Stats / Tips card -->
+            <div class="rounded-2xl border border-slate-200/70 p-5 shadow-soft bg-gradient-to-br from-white/90 to-slate-50/80 backdrop-blur ring-1 ring-white/60">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 grid place-items-center text-xl">💡</div>
+                <div class="flex-1">
+                  <div class="font-extrabold">Tips to shortlist</div>
+                  <ul class="mt-2 text-sm text-slate-700 list-disc ml-5 space-y-1">
+                    <li>Use Class and Income filters to narrow relevant schemes.</li>
+                    <li>Check deadlines and eligibility carefully before applying.</li>
+                    <li>Save links and set reminders so you don’t miss out.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mt-4 h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-brand-500 to-indigo-500" style="width: 45%"></div>
+              </div>
+              <div class="mt-1 text-xs text-slate-500">Discovering opportunities…</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- In-SPA Games Fallback Section -->
+      <section id="sectionGames" class="hidden">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-extrabold">Games Hub</h2>
+          <div class="text-sm text-slate-600">Play quick mini-games to earn XP</div>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Quick Math -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-100 grid place-items-center text-2xl">🔢</div>
+                <div>
+                  <h3 class="font-bold text-lg">Quick Math</h3>
+                  <p class="text-slate-600 text-sm">Answer fast for 30 seconds</p>
+                </div>
+              </div>
+              <button id="qmStart" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Start</button>
+            </div>
+            <div class="mt-4 text-sm">
+              <div class="flex items-center justify-between">
+                <div>Time: <span id="qmTime" class="font-bold">0</span>s</div>
+                <div>Score: <span id="qmScore" class="font-bold">0</span></div>
+              </div>
+              <div class="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                <div id="qmQuestion" class="text-lg font-semibold">Ready?</div>
+                <div class="mt-2 flex items-center justify-center gap-2">
+                  <input id="qmAnswer" type="number" class="px-3 py-1.5 rounded-lg border border-slate-300 w-28 text-center" placeholder="Ans" />
+                  <button id="qmSubmit" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Submit</button>
+                </div>
+                <div id="qmFeedback" class="mt-2 text-slate-600">Click Start</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Tap -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-100 grid place-items-center text-2xl">🎯</div>
+                <div>
+                  <h3 class="font-bold text-lg">Target Tap</h3>
+                  <p class="text-slate-600 text-sm">Tap as many as you can in 15s</p>
+                </div>
+              </div>
+              <button id="ttStart" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Start</button>
+            </div>
+            <div class="mt-3">
+              <div id="ttField" class="relative h-48 rounded-xl border border-indigo-200 bg-white overflow-hidden"></div>
+              <div class="mt-2 text-sm">Hits: <span id="ttHits" class="font-bold">0</span></div>
+            </div>
+          </div>
+
+          <!-- Mystery Box -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-soft">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-rose-100 grid place-items-center text-2xl">🎁</div>
+                <div>
+                  <h3 class="font-bold text-lg">Mystery Box</h3>
+                  <p class="text-slate-600 text-sm">Spin for a chance to win XP</p>
+                </div>
+              </div>
+              <button id="mbOpen" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Open</button>
+            </div>
+            <div id="mbResult" class="mt-3 text-sm text-slate-700">One spin per minute.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Quiz Results Modal -->
+    <div id="modalResults" class="fixed inset-0 z-40 hidden">
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="relative max-w-2xl mx-auto mt-16 bg-white rounded-2xl p-6 shadow-2xl border border-slate-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl font-extrabold">Quiz Results</h3>
+          <button id="btnCloseResults" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">✕</button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6 mt-4">
+          <div>
+            <canvas id="resultsChart" width="300" height="300"></canvas>
+          </div>
+          <div class="space-y-3">
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div class="text-sm text-slate-600">Score</div>
+              <div class="text-3xl font-extrabold"><span id="resultsScore">0</span>%</div>
+            </div>
+            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+              <div class="text-sm text-emerald-700">Feedback</div>
+              <div id="resultsFeedback" class="font-semibold text-emerald-800">Nice work!</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-sm text-slate-600">Switch Topic:</label>
+              <select id="resultsTopicSwitcher" class="px-3 py-2 rounded-lg border border-slate-200"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 pb-10 text-center text-slate-500 text-sm">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center justify-center gap-2">
+          <span>Made with</span><span class="text-rose-500">❤</span><span>for curious minds.</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+  </html>

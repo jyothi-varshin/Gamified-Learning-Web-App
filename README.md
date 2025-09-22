@@ -1,25 +1,23 @@
-# Gamified Learning Web App
+# EduQuest – Gamified Learning Platform
 
-## Overview
-This is an interactive learning platform designed for the **SIH Hackathon**, aimed at **students in rural areas**. The app makes learning engaging through gamification elements like **flashcards, puzzles, and crosswords**, helping students from **classes 6th to 12th** stay motivated while studying.  
-
-It is **offline-friendly** and **multilingual-ready** (currently in English), making it accessible to users with limited internet connectivity.  
-
-A unique feature of this app is that it **provides information about scholarships** offered by the **Central and State Government of Odisha**, helping students and families who often are unaware of their eligibility.  
+A fun, single-page learning app covering Science, Technology, Mathematics, and Engineering with points, levels, streaks, and badges.
 
 ## Features
-- Gamified learning modules: flashcards, puzzles, crosswords  
-- Offline access for rural users  
-- Multilingual support (English currently)  
-- Scholarship information for students in Odisha  
-- Responsive and user-friendly interface  
+- Auth flow (Sign In/Sign Up) and student setup (Grade, Language, Name)
+- Subjects grid → Topics grid
+- Topic detail: Interactive Notes (mini-game), Practice, Quiz
+- Quiz results with pie chart and topic switcher
+- Leaderboard with ranks, points, streaks, stars
+- Scholarships page (state + central schemes)
+- TailwindCSS via CDN, Chart.js for charts
+- Persistence with localStorage
 
-## Technologies Used
-- HTML5  
-- CSS3  
-- JavaScript  
+## Run
+Open `index.html` in your browser. No build required.
 
-## How to Run
-1. Clone the repository:  
-   ```bash
-   git clone https://github.com/jyothi-varshin/Gamified-Learning-Web-App.git
+## Tech
+- HTML, CSS (Tailwind), JavaScript (vanilla)
+- Chart.js (CDN)
+
+## Notes
+This is a client-only demo. You can clear data by clearing browser localStorage for the site.
